@@ -1,5 +1,58 @@
 #include "socketutil.c"
-void reciveAndPrintIncomingDataSeparateThread(struct AcceptedSocket *clientSockets);
+
+struct AcceptedSocket acceptedSockets[10] ;
+int acceptedSocketsCount = 0;
+
+void sendReceivedMessageToTheOtherClients(char *buffer,int socketFD) {
+
+    for(int i = 0 ; i < acceptedSocketsCount ; i++)
+        if(acceptedSockets[i].acceptedSocketFD !=socketFD)
+        {
+            send(acceptedSockets[i].acceptedSocketFD,buffer, strlen(buffer),0);
+        }
+
+}
+
+void receiveAndPrintIncomingData(int socketFD)
+{
+    char buffer[1024];
+    while (true)
+    {
+        ssize_t ammountRecived = recv(socketFD, buffer, 1024, 0);
+        if (ammountRecived > 0)
+        {
+            buffer[ammountRecived] = 0;
+            printf("La respuesta es: %s", buffer);
+            sendReceivedMessageToTheOtherClients(buffer,socketFD);
+        }
+        if (ammountRecived == 0)
+        {
+            break;
+        }
+    }
+    close(socketFD);
+}
+
+void receiveAndPrintIncomingDataSeparateThread(struct AcceptedSocket *clientSockets)
+{
+    // recibir respuesta del cliente en un subproceso separado
+    pthread_t id;
+    pthread_create(&id, NULL, (void *)receiveAndPrintIncomingData, clientSockets->acceptedSocketFD);
+}
+
+void startAcceptingConecion(int serversocketFD)
+{
+    // para cada conexion entrante aceptada crear un subproceso
+    while (true)
+    {
+        // estructura para almacenar datos de la coneccion entrante
+        struct AcceptedSocket *clientSockets = acceptIncomingConection(serversocketFD);
+        acceptedSockets[acceptedSocketsCount++] = *clientSockets;
+
+        receiveAndPrintIncomingDataSeparateThread(clientSockets);
+    }
+}
+
 int main()
 {
     // servidor
@@ -39,51 +92,4 @@ int main()
     // cerrar los File Descriptor
     shutdown(serversocketFD, SHUT_RDWR);
     return 0;
-}
-
-void startAcceptingConecion(int serversocketFD)
-{
-    // para cada conexxion entrante acceptada crear un subproceso
-    while (true)
-    {
-        // estructura para almacenar datos de la coneccion entrante
-        struct AcceptedSocket *clientSockets = acceptIncomingConection(serversocketFD);
-        if (clientSockets->acceptedSocketFD < 0)
-        {
-            perror("Error al aceptar la conexión entrante");
-            exit(1);
-        }
-        else
-        {
-            printf("Conexión aceptada desde %s:%d\n", inet_ntoa(clientSockets->address.sin_addr), ntohs(clientSockets->address.sin_port));
-        }
-
-        reciveAndPrintIncomingDataSeparateThread(clientSockets);
-    }
-}
-
-void reciveAndPrintIncomingDataSeparateThread(struct AcceptedSocket *clientSockets)
-{
-    // recibir respuesta del cliente en un subproceso separado
-    pthread_t id;
-    pthread_create(&id, NULL, (void *)recibeAndPrintIncomingData, clientSockets->acceptedSocketFD);
-}
-
-void recibeAndPrintIncomingData(int socketFD)
-{
-    char buffer[1024];
-    while (true)
-    {
-        ssize_t ammountRecived = recv(socketFD, buffer, 1024, 0);
-        if (ammountRecived > 0)
-        {
-            buffer[ammountRecived] = 0;
-            printf("La respuesta es: %s", buffer);
-        }
-        if (ammountRecived == 0)
-        {
-            break;
-        }
-    }
-    close(socketFD);
 }

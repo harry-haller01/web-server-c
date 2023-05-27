@@ -38,12 +38,4 @@ int main()
     close(socketFD);
 
     return 0;
-    // lsof -i :2000
-    /*%s: %s.c
-
-client:client
-    ./client
-
-server:server
-    ./server*/
 }
