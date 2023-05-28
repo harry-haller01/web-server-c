@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Contenido de /home/dariel/Escritorio/web-serv-ult</title>
+<script>
+function sendButtonName(buttonName) {
+fetch('/button', {
+method: 'POST',
+body: JSON.stringify({ buttonName: buttonName }),
+headers: {
+'Content-Type': 'application/json'
+}
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch(error => console.error(error))
+}
+</script>
+</head>
+<body>
+<h1>Contenido de /home/dariel/Escritorio/web-serv-ult</h1>
+<ul>
+<li><button id="../" onclick="sendButtonName('../')">../</button></li>
+<li><button id="client" onclick="sendButtonName('client')">client</button></li>
+<li><button id="client.c" onclick="sendButtonName('client.c')">client.c</button></li>
+<li><button id="Makefile" onclick="sendButtonName('Makefile')">Makefile</button></li>
+<li><button id="a.out" onclick="sendButtonName('a.out')">a.out</button></li>
+<li><button id="text" onclick="sendButtonName('text')">text</button></li>
+<li><button id="server.c" onclick="sendButtonName('server.c')">server.c</button></li>
+<li><button id="index.html" onclick="sendButtonName('index.html')">index.html</button></li>
+</ul>
+</body>
+</html>

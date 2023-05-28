@@ -1,10 +1,7 @@
-client:client.c
+client: client.c
 	gcc -o client client.c
-	./client 
+	./client 4000 /home/dariel/Escritorio/web-serv-ult
 
-server :server.c
+server: server.c
 	gcc -o server server.c
-	./server 
-	
-
-
+	./server 4000 /home/dariel/Escritorio/web-serv-ult
