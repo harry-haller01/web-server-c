@@ -16,18 +16,36 @@ headers: {
 .catch(error => console.error(error))
 }
 </script>
+<script>
+function downloadFile(buttonName) {
+var xhr = new XMLHttpRequest();
+xhr.open('GET', '/download', true);
+xhr.responseType = 'blob';
+xhr.onload = function(e) {
+if (this.status == 200) {
+var blob = new Blob([this.response], {type: 'application/octet-stream'});
+var link = document.createElement('a');
+link.href = window.URL.createObjectURL(blob);
+link.download = buttonName;
+link.click();
+}
+};
+xhr.send();
+}
+</script>
 </head>
 <body>
 <h1>Contenido de /home/dariel/Escritorio/web-serv-ult</h1>
 <ul>
 <li><button id="../" onclick="sendButtonName('../')">../</button></li>
-<li><button id="client" onclick="sendButtonName('client')">client</button></li>
-<li><button id="client.c" onclick="sendButtonName('client.c')">client.c</button></li>
-<li><button id="Makefile" onclick="sendButtonName('Makefile')">Makefile</button></li>
-<li><button id="a.out" onclick="sendButtonName('a.out')">a.out</button></li>
-<li><button id="text" onclick="sendButtonName('text')">text</button></li>
-<li><button id="server.c" onclick="sendButtonName('server.c')">server.c</button></li>
-<li><button id="index.html" onclick="sendButtonName('index.html')">index.html</button></li>
+<li><button id="client.c" onclick="downloadFile('client.c')">client.c</button></li>
+<li><button id="Makefile" onclick="downloadFile('Makefile')">Makefile</button></li>
+<li><button id="a.out" onclick="downloadFile('a.out')">a.out</button></li>
+<li><button id="text" onclick="downloadFile('text')">text</button></li>
+<li><button id="result.txt" onclick="downloadFile('result.txt')">result.txt</button></li>
+<li><button id="asd" onclick="sendButtonName('asd')">asd/</button></li>
+<li><button id="server.c" onclick="downloadFile('server.c')">server.c</button></li>
+<li><button id="index.html" onclick="downloadFile('index.html')">index.html</button></li>
 </ul>
 </body>
 </html>

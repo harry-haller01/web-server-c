@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <dirent.h>
+#include <sys/sendfile.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
@@ -28,18 +31,29 @@ int html_builder(const char *root_dir) {
         return 1;
     }
 
-    char script1[1000] = "<script>\nfunction sendButtonName(buttonName) {\nfetch('/button', {\n";
-    char script2[] = "method: 'POST',\nbody: JSON.stringify({ buttonName: buttonName }),\n";
-    char script3[] = "headers: {\n'Content-Type': 'application/json'\n}\n})\n.then(response => response.json())\n";
-    char script4[] = ".then(data => console.log(data))\n.catch(error => console.error(error))\n}\n</script>\n";
-    strcat(script1, script2);
-    strcat(script1, script3);
-    strcat(script1, script4);
+    char script11[1000] = "<script>\nfunction sendButtonName(buttonName) {\nfetch('/button', {\n";
+    char script12[] = "method: 'POST',\nbody: JSON.stringify({ buttonName: buttonName }),\n";
+    char script13[] = "headers: {\n'Content-Type': 'application/json'\n}\n})\n.then(response => response.json())\n";
+    char script14[] = ".then(data => console.log(data))\n.catch(error => console.error(error))\n}\n</script>\n";
+    strcat(script11, script12);
+    strcat(script11, script13);
+    strcat(script11, script14);
+
+    char script21[1000] = "<script>\nfunction downloadFile(buttonName) {\nvar xhr = new XMLHttpRequest();\nxhr.open('GET', '/download', true);\n";
+    char script22[] = "xhr.responseType = 'blob';\nxhr.onload = function(e) {\nif (this.status == 200) {\n";
+    char script23[] = "var blob = new Blob([this.response], {type: 'application/octet-stream'});\n";
+    char script24[] = "var link = document.createElement('a');\nlink.href = window.URL.createObjectURL(blob);\n";
+    char script25[] = "link.download = buttonName;\nlink.click();\n}\n};\nxhr.send();\n}\n</script>\n";
+    strcat(script21, script22);
+    strcat(script21, script23);
+    strcat(script21, script24);
+    strcat(script21, script25);
 
     // escribir encabezado HTML
     fprintf(html_file, "<!DOCTYPE html>\n<html>\n<head>\n");
     fprintf(html_file, "<title>Contenido de %s</title>\n", root_dir);
-    fprintf(html_file, script1, root_dir);
+    fprintf(html_file, script11, root_dir);
+    fprintf(html_file, script21, root_dir);
     fprintf(html_file, "</head>\n<body>\n<h1>Contenido de %s</h1>\n<ul>\n", root_dir);
     fprintf(html_file, "<li><button id=\"../\" onclick=\"sendButtonName('../')\">../</button></li>\n");
 
@@ -62,8 +76,12 @@ int html_builder(const char *root_dir) {
             closedir(subdir);
         }
 
-        // escribir elemento de lista en el archivo HTML
-        fprintf(html_file, "<li><button id=\"%s\" onclick=\"sendButtonName('%s')\">%s%s</button></li>\n", entry->d_name, entry->d_name, entry->d_name, is_dir ? "/" : "");
+        if (is_dir) {
+            // escribir elemento de lista en el archivo HTML
+            fprintf(html_file, "<li><button id=\"%s\" onclick=\"sendButtonName('%s')\">%s%s</button></li>\n", entry->d_name, entry->d_name, entry->d_name, "/");
+        }
+        else
+            fprintf(html_file, "<li><button id=\"%s\" onclick=\"downloadFile('%s')\">%s%s</button></li>\n", entry->d_name, entry->d_name, entry->d_name, "");
     }
 
     // escribir cierre HTML
@@ -85,7 +103,7 @@ int main(int argc, char const *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    int server_fd, new_socket, valread;
+    int server_fd, new_socket, valread, fd;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char buffer[1024] = {0};
