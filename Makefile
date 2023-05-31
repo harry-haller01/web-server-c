@@ -3,4 +3,4 @@ server: server.c
 	./server $(PORT) $(DIR)
 
 PORT ?= 8800
-DIR ?= /home/dariel/Escritorio/web-serv-ult
+DIR ?= /home/dariel/Escritorio/web-server/web-server-c

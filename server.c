@@ -9,6 +9,7 @@
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
@@ -31,31 +32,36 @@ int html_builder(const char *root_dir) {
         return 1;
     }
 
-    char script11[1000] = "<script>\nfunction sendButtonName(buttonName) {\nfetch('/button', {\n";
-    char script12[] = "method: 'POST',\nbody: JSON.stringify({ buttonName: buttonName }),\n";
-    char script13[] = "headers: {\n'Content-Type': 'application/json'\n}\n})\n.then(response => response.json())\n";
-    char script14[] = ".then(data => console.log(data))\n.catch(error => console.error(error))\n}\n</script>\n";
-    strcat(script11, script12);
-    strcat(script11, script13);
-    strcat(script11, script14);
-
-    char script21[1000] = "<script>\nfunction downloadFile(buttonName) {\nvar xhr = new XMLHttpRequest();\nxhr.open('GET', '/download', true);\n";
-    char script22[] = "xhr.responseType = 'blob';\nxhr.onload = function(e) {\nif (this.status == 200) {\n";
-    char script23[] = "var blob = new Blob([this.response], {type: 'application/octet-stream'});\n";
-    char script24[] = "var link = document.createElement('a');\nlink.href = window.URL.createObjectURL(blob);\n";
-    char script25[] = "link.download = buttonName;\nlink.click();\n}\n};\nxhr.send();\n}\n</script>\n";
-    strcat(script21, script22);
-    strcat(script21, script23);
-    strcat(script21, script24);
-    strcat(script21, script25);
+    char item1[2048] = "<script>\nfunction sortTable(n) {\nvar table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;\n";
+    char item2[] = "table = document.getElementsByTagName(\"table\")[0];\nswitching = true;\ndir = \"asc\";\nwhile (switching) {\n";
+    char item3[] = "switching = false;\nrows = table.rows;\nfor (i = 1; i < (rows.length - 1); i++) {\n";
+    char item4[] = "shouldSwitch = false;\nx = rows[i].getElementsByTagName(\"td\")[n];\n";
+    char item5[] = "y = rows[i + 1].getElementsByTagName(\"td\")[n];\nif (dir == \"asc\") {\n";
+    char item6[] = "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {\nshouldSwitch = true;\nbreak;\n}\n";
+    char item7[] = "} else if (dir == \"desc\") {\nif (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {\n";
+    char item8[] = "shouldSwitch = true;\nbreak;\n}\n}\n}\nif (shouldSwitch) {\nrows[i].parentNode.insertBefore(rows[i + 1], rows[i]);\n";
+    char item9[] = "switching = true;\nswitchcount ++;\n} else {\nif (switchcount == 0 && dir == \"asc\") {\n";
+    char item10[] = "dir = \"desc\";\nswitching = true;\n}\n}\n}\n}\n</script>\n";
+    strcat(item1, item2);
+    strcat(item1, item3);
+    strcat(item1, item4);
+    strcat(item1, item5);
+    strcat(item1, item6);
+    strcat(item1, item7);
+    strcat(item1, item8);
+    strcat(item1, item9);
+    strcat(item1, item10);
 
     // escribir encabezado HTML
     fprintf(html_file, "<!DOCTYPE html>\n<html>\n<head>\n");
     fprintf(html_file, "<title>Contenido de %s</title>\n", root_dir);
-    fprintf(html_file, script11, root_dir);
-    fprintf(html_file, script21, root_dir);
-    fprintf(html_file, "</head>\n<body>\n<h1>Contenido de %s</h1>\n<ul>\n", root_dir);
-    fprintf(html_file, "<li><button id=\"../\" onclick=\"sendButtonName('../')\">../</button></li>\n");
+    fprintf(html_file, "%s", item1);
+    fprintf(html_file, "</head>\n<body>\n<h1>Contenido de %s</h1>\n<table>\n", root_dir);
+    fprintf(html_file, "<thead>\n<tr>\n<th id=\"nombre\" onclick=\"sortTable(0)\">Name</th>\n");
+    fprintf(html_file, "<th id=\"peso\" onclick=\"sortTable(1)\">Size</th>\n");
+    fprintf(html_file, "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n</tr>\n</thead>\n<tbody>\n");
+    
+    //fprintf(html_file, "<li><a href=\"%s\" download>../</a></li>\n", last_slash);
 
     // escribir lista de archivos y subdirectorios
     while ((entry = readdir(dir)) != NULL) {
@@ -76,16 +82,29 @@ int html_builder(const char *root_dir) {
             closedir(subdir);
         }
 
+        // escribir elemento de lista en el archivo HTML
         if (is_dir) {
-            // escribir elemento de lista en el archivo HTML
-            fprintf(html_file, "<li><button id=\"%s\" onclick=\"sendButtonName('%s')\">%s%s</button></li>\n", entry->d_name, entry->d_name, entry->d_name, "/");
+            struct stat info;
+
+            if (stat(entry_path, &info) == 0) {
+                fprintf(html_file, "<tr>\n<td><a href=\"%s/\">%s/</a></td>\n", entry_path, entry->d_name);
+                fprintf(html_file, "<td>%ld bytes</td>\n", info.st_size);
+                fprintf(html_file, "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
+            }
         }
-        else
-            fprintf(html_file, "<li><button id=\"%s\" onclick=\"downloadFile('%s')\">%s%s</button></li>\n", entry->d_name, entry->d_name, entry->d_name, "");
+        else {
+            struct stat info;
+
+            if (stat(entry_path, &info) == 0) {
+                fprintf(html_file, "<tr>\n<td><a href=\"%s\" download>%s</a></td>\n", entry_path, entry->d_name);
+                fprintf(html_file, "<td>%ld bytes</td>\n", info.st_size);
+                fprintf(html_file, "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
+            }
+        }
     }
 
     // escribir cierre HTML
-    fprintf(html_file, "</ul>\n</body>\n</html>");
+    fprintf(html_file, "</tbody>\n</table>\n</body>\n</html>");
 
     // cerrar archivos y directorios
     closedir(dir);

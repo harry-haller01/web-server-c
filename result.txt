@@ -1,4 +1,10 @@
-asd
-asd
-../
-../
+"<script>\nfunction sortTable(n) {\nvar table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;\n"
+"table = document.getElementsByTagName("table")[0];\nswitching = true;\ndir = "asc";\nwhile (switching) {\n"
+"switching = false;\nrows = table.rows;\nfor (i = 1; i < (rows.length - 1); i++) {\n"
+"shouldSwitch = false;\nx = rows[i].getElementsByTagName("td")[n];\n"
+"y = rows[i + 1].getElementsByTagName("td")[n];\nif (dir == "asc") {\n"
+"if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {\nshouldSwitch = true;\nbreak;\n}\n"
+"} else if (dir == "desc") {\nif (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {\n"
+"shouldSwitch = true;\nbreak;\n}\n}\n}\nif (shouldSwitch) {\nrows[i].parentNode.insertBefore(rows[i + 1], rows[i]);\n"
+"switching = true;\nswitchcount ++;\n} else {\nif (switchcount == 0 && dir == "asc") {\n"
+"dir = "desc";\nswitching = true;\n}\n}\n}\n}\n</script>\n"
