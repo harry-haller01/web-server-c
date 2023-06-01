@@ -1,6 +1,6 @@
 server: server.c
-	gcc -o server server.c
+	gcc -o server server.c -lpthread
 	./server $(PORT) $(DIR)
 
 PORT ?= 8800
-DIR ?= /home/dariel/Escritorio/web-server/web-server-c
+DIR ?= /

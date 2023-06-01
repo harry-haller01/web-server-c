@@ -47,63 +47,59 @@ char *read_file(const char *filename) {
     return buffer;
 }
 
-int html_builder(const char *root_dir) {
+void html_builder(int client_socket, const char *root_dir) {
+    char response[8192];
+    snprintf(response, sizeof(response),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n\r\n"
+        "<!DOCTYPE html>\n<html>\n<head>\n");
+    
     DIR *dir;
     struct dirent *entry;
 
     // abrir directorio
     dir = opendir(root_dir);
     if (!dir) {
-        perror("opendir");
-        return 1;
+        snprintf(response, sizeof(response),
+                "HTTP/1.1 403 Forbidden\r\n"
+                "Content-Type: text/html\r\n\r\n"
+                "<!DOCTYPE html>\n<html>\n<head>\n"
+                "<title>Error 403: Acceso denegado</title>\n"
+                "</head>\n<body>\n"
+                "<h1>Error 403: Acceso denegado</h1>\n"
+                "<p>No tienes permisos suficientes para acceder al directorio especificado.</p>\n"
+                "</body>\n</html>");
+        send(client_socket, response, strlen(response), 0);
+        return;
     }
-
-    // crear archivo HTML
-    FILE *html_file = fopen(".index.html", "w");
-    if (!html_file) {
-        perror("fopen");
-        return 1;
-    }
-
-    char item1[2048] = "<script>\nfunction sortTable(n) {\nvar table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;\n";
-    char item2[] = "table = document.getElementsByTagName(\"table\")[0];\nswitching = true;\ndir = \"asc\";\nwhile (switching) {\n";
-    char item3[] = "switching = false;\nrows = table.rows;\nfor (i = 1; i < (rows.length - 1); i++) {\n";
-    char item4[] = "shouldSwitch = false;\nx = rows[i].getElementsByTagName(\"td\")[n];\n";
-    char item5[] = "y = rows[i + 1].getElementsByTagName(\"td\")[n];\nif (dir == \"asc\") {\n";
-    char item6[] = "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {\nshouldSwitch = true;\nbreak;\n}\n";
-    char item7[] = "} else if (dir == \"desc\") {\nif (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {\n";
-    char item8[] = "shouldSwitch = true;\nbreak;\n}\n}\n}\nif (shouldSwitch) {\nrows[i].parentNode.insertBefore(rows[i + 1], rows[i]);\n";
-    char item9[] = "switching = true;\nswitchcount ++;\n} else {\nif (switchcount == 0 && dir == \"asc\") {\n";
-    char item10[] = "dir = \"desc\";\nswitching = true;\n}\n}\n}\n}\n</script>\n";
-    strcat(item1, item2);
-    strcat(item1, item3);
-    strcat(item1, item4);
-    strcat(item1, item5);
-    strcat(item1, item6);
-    strcat(item1, item7);
-    strcat(item1, item8);
-    strcat(item1, item9);
-    strcat(item1, item10);
 
     // escribir encabezado HTML
-    fprintf(html_file, "<!DOCTYPE html>\n<html>\n<head>\n");
-    fprintf(html_file, "<title>Contenido de %s</title>\n", root_dir);
-    fprintf(html_file, "<style>\n%s\n</style>\n", read_file(".styles.css"));
-    fprintf(html_file, "%s", item1);
-    fprintf(html_file, "</head>\n<body>\n<h1>\n<center>\nContenido de %s\n</center>\n</h1>\n<table>\n", root_dir);
-    fprintf(html_file, "<thead>\n<tr>\n<th id=\"nombre\" onclick=\"sortTable(0)\">Name</th>\n");
-    fprintf(html_file, "<th id=\"peso\" onclick=\"sortTable(1)\">Size</th>\n");
-    fprintf(html_file, "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n</tr>\n</thead>\n<tbody>\n");
-    
-    //fprintf(html_file, "<li><a href=\"%s\" download>../</a></li>\n", last_slash);
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<title>Contenido de %s</title>\n", root_dir);
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<style>\n%s\n</style>\n", read_file(".styles.css"));
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<script>\nfunction sortTable(n) {\nvar table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;\n"
+        "table = document.getElementsByTagName(\"table\")[0];\nswitching = true;\ndir = \"asc\";\nwhile (switching) {\n"
+        "switching = false;\nrows = table.rows;\nfor (i = 1; i < (rows.length - 1); i++) {\n"
+        "shouldSwitch = false;\nx = rows[i].getElementsByTagName(\"td\")[n];\n"
+        "y = rows[i + 1].getElementsByTagName(\"td\")[n];\nif (dir == \"asc\") {\n"
+        "if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {\nshouldSwitch = true;\nbreak;\n}\n"
+        "} else if (dir == \"desc\") {\nif (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {\n"
+        "shouldSwitch = true;\nbreak;\n}\n}\n}\nif (shouldSwitch) {\nrows[i].parentNode.insertBefore(rows[i + 1], rows[i]);\n"
+        "switching = true;\nswitchcount ++;\n} else {\nif (switchcount == 0 && dir == \"asc\") {\n"
+        "dir = \"desc\";\nswitching = true;\n}\n}\n}\n}\n</script>\n");
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "</head>\n<body>\n<h1>\n<center>\nContenido de %s\n</center>\n</h1>\n<table>\n", root_dir);
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<thead>\n<tr>\n<th id=\"nombre\" onclick=\"sortTable(0)\">Name</th>\n");
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<th id=\"peso\" onclick=\"sortTable(1)\">Size</th>\n");
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n</tr>\n</thead>\n<tbody>\n");
 
     // escribir lista de archivos y subdirectorios
     while ((entry = readdir(dir)) != NULL) {
-        // omitir archivos y directorios ocultos
-        if (entry->d_name[0] == '.') {
-            continue;
-        }
-
         // obtener ruta completa del archivo o directorio
         char entry_path[1024];
         snprintf(entry_path, sizeof(entry_path), "%s/%s", root_dir, entry->d_name);
@@ -117,50 +113,27 @@ int html_builder(const char *root_dir) {
         }
 
         // escribir elemento de lista en el archivo HTML
-        if (is_dir) {
-            struct stat info;
-
-            if (stat(entry_path, &info) == 0) {
-                fprintf(html_file, "<tr>\n<td><a href=\"%s/\">%s/</a></td>\n", entry_path, entry->d_name);
-                fprintf(html_file, "<td>%ld bytes</td>\n", info.st_size);
-                fprintf(html_file, "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
-            }
-        }
-        else {
-            struct stat info;
-
-            if (stat(entry_path, &info) == 0) {
-                fprintf(html_file, "<tr>\n<td><a href=\"%s\" download>%s</a></td>\n", entry_path, entry->d_name);
-                fprintf(html_file, "<td>%ld bytes</td>\n", info.st_size);
-                fprintf(html_file, "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
-            }
+        struct stat info;
+        if (stat(entry_path, &info) == 0) {
+            if (is_dir)
+                snprintf(response + strlen(response), sizeof(response) - strlen(response),
+                    "<tr>\n<td><a href=\"%s/\">%s/</a></td>\n", entry->d_name, entry->d_name);
+            else
+                snprintf(response + strlen(response), sizeof(response) - strlen(response),
+                    "<tr>\n<td><a href=\"%s\">%s</a></td>\n", entry->d_name, entry->d_name);
+            snprintf(response + strlen(response), sizeof(response) - strlen(response),
+                "<td>%ld bytes</td>\n", info.st_size);
+            snprintf(response + strlen(response), sizeof(response) - strlen(response),
+                "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
         }
     }
+    closedir(dir);
 
     // escribir cierre HTML
-    fprintf(html_file, "</tbody>\n</table>\n</body>\n</html>");
-
-    // cerrar archivos y directorios
-    closedir(dir);
-    fclose(html_file);
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "</tbody>\n</table>\n</body>\n</html>");
 
     printf("Archivo HTML generado exitosamente.\n");
 
-    return 0;
-}
-
-int open_file(FILE **fp, char **html)
-{
-    *fp = fopen(".index.html", "r");
-    if (*fp == NULL) {
-        perror("fopen");
-        exit(EXIT_FAILURE);
-    }
-    fseek(*fp, 0, SEEK_END);
-    long size = ftell(*fp);
-    fseek(*fp, 0, SEEK_SET);
-    *html = malloc(size + 1);
-    fread(*html, 1, size, *fp);
-    fclose(*fp);
-    return size;
+    send(client_socket, response, strlen(response), 0);
 }
