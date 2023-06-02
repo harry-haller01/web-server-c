@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include <time.h>
 
+char mod_str[80];
+
 char *read_file(const char *filename) {
     FILE *file = fopen(filename, "rb");
     if (!file) {
@@ -47,6 +49,36 @@ char *read_file(const char *filename) {
     return buffer;
 }
 
+char *permissions(int id) {
+    switch (id % 8) {
+        case 0:
+            return "No permission";
+        case 1:
+            return "Execute";
+        case 2:
+            return "Write";
+        case 3:
+            return "Write and execute";
+        case 4:
+            return "Read";
+        case 5:
+            return "Read and execute";
+        case 6:
+            return "Read and write";
+        case 7:
+            return "Read, write and execute";
+        default:
+            return "-";
+    }
+}
+
+char *time_stat(struct stat info) {
+    time_t mod_time = info.st_mtime;
+    struct tm *mod_tm = localtime(&mod_time);
+    strftime(mod_str, 80, "%Y-%m-%d %A %H:%M:%S", mod_tm);
+    return mod_str;
+}
+
 void html_builder(int client_socket, const char *root_dir) {
     char response[8192];
     snprintf(response, sizeof(response),
@@ -61,14 +93,14 @@ void html_builder(int client_socket, const char *root_dir) {
     dir = opendir(root_dir);
     if (!dir) {
         snprintf(response, sizeof(response),
-                "HTTP/1.1 403 Forbidden\r\n"
-                "Content-Type: text/html\r\n\r\n"
-                "<!DOCTYPE html>\n<html>\n<head>\n"
-                "<title>Error 403: Acceso denegado</title>\n"
-                "</head>\n<body>\n"
-                "<h1>Error 403: Acceso denegado</h1>\n"
-                "<p>No tienes permisos suficientes para acceder al directorio especificado.</p>\n"
-                "</body>\n</html>");
+            "HTTP/1.1 403 Forbidden\r\n"
+            "Content-Type: text/html\r\n\r\n"
+            "<!DOCTYPE html>\n<html>\n<head>\n"
+            "<title>Error 403: Acceso denegado</title>\n"
+            "</head>\n<body>\n"
+            "<h1>Error 403: Acceso denegado</h1>\n"
+            "<p>No tienes permisos suficientes para acceder al directorio especificado.</p>\n"
+            "</body>\n</html>");
         send(client_socket, response, strlen(response), 0);
         return;
     }
@@ -96,7 +128,9 @@ void html_builder(int client_socket, const char *root_dir) {
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
         "<th id=\"peso\" onclick=\"sortTable(1)\">Size</th>\n");
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
-        "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n</tr>\n</thead>\n<tbody>\n");
+        "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n");
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<th id=\"permisos\" onclick=\"sortTable(3)\">Permission</th>\n</tr>\n</thead>\n<tbody>\n");
 
     // escribir lista de archivos y subdirectorios
     while ((entry = readdir(dir)) != NULL) {
@@ -124,7 +158,9 @@ void html_builder(int client_socket, const char *root_dir) {
             snprintf(response + strlen(response), sizeof(response) - strlen(response),
                 "<td>%ld bytes</td>\n", info.st_size);
             snprintf(response + strlen(response), sizeof(response) - strlen(response),
-                "<td>%s</td>\n</tr>\n", ctime(&info.st_mtime));
+                "<td>%s</td>\n", time_stat(info));
+            snprintf(response + strlen(response), sizeof(response) - strlen(response),
+                "<td>%s</td>\n</tr>\n", permissions(info.st_mode & 0777));
         }
     }
     closedir(dir);
