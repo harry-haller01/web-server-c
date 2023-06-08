@@ -15,6 +15,25 @@ Este proyecto es un servidor de directorios simple escrito en C que utiliza HTML
 - Compilador de C (por ejemplo, GCC)
 - Sistema operativo compatible con POSIX (Linux, macOS, etc.)
 
+## Bibliotecas utilizadas
+
+El servidor utiliza las siguientes bibliotecas de C:
+
+- `stdio.h`: para operaciones de entrada/salida estándar
+- `stdlib.h`: para funciones de utilidad y gestión de memoria
+- `string.h`: para operaciones de cadena
+- `dirent.h`: para operaciones de directorio
+- `sys/stat.h`: para obtener información sobre archivos y directorios
+- `time.h`: para obtener información sobre la fecha y hora actual
+- `sys/socket.h`: para trabajar con sockets de red
+- `unistd.h`: para operaciones de sistema
+- `netinet/in.h`: para definir estructuras de direcciones de red
+- `fcntl.h`: para operaciones de archivo
+- `sys/sendfile.h`: para enviar archivos a través de sockets
+- `pthread.h`: para trabajar con hilos
+- `semaphore.h`: para sincronizar el acceso a recursos compartidos
+- `stdbool.h`: para utilizar valores booleanos
+
 ## Compilación
 
 Para compilar el proyecto, ejecute el siguiente comando en la terminal:
