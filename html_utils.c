@@ -151,10 +151,10 @@ void html_builder(int client_socket, const char *root_dir) {
         if (stat(entry_path, &info) == 0) {
             if (is_dir)
                 snprintf(response + strlen(response), sizeof(response) - strlen(response),
-                    "<tr>\n<td><a href=\"%s/\">%s/</a></td>\n", entry->d_name, entry->d_name);
+                    "<tr>\n<td><a href=\"%s/\" class=\"dir\">%s/</a></td>\n", entry->d_name, entry->d_name);
             else
                 snprintf(response + strlen(response), sizeof(response) - strlen(response),
-                    "<tr>\n<td><a href=\"%s\">%s</a></td>\n", entry->d_name, entry->d_name);
+                    "<tr>\n<td><a href=\"%s\" class=\"file\">%s</a></td>\n", entry->d_name, entry->d_name);
             snprintf(response + strlen(response), sizeof(response) - strlen(response),
                 "<td>%ld bytes</td>\n", info.st_size);
             snprintf(response + strlen(response), sizeof(response) - strlen(response),
