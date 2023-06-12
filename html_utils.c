@@ -80,7 +80,7 @@ char *time_stat(struct stat info) {
 }
 
 void html_builder(int client_socket, const char *root_dir) {
-    char response[8192];
+    char response[16384];
     snprintf(response, sizeof(response),
         "HTTP/1.1 200 OK\r\n"
         "Content-Type: text/html\r\n\r\n"
@@ -122,11 +122,22 @@ void html_builder(int client_socket, const char *root_dir) {
         "switching = true;\nswitchcount ++;\n} else {\nif (switchcount == 0 && dir == \"asc\") {\n"
         "dir = \"desc\";\nswitching = true;\n}\n}\n}\n}\n</script>\n");
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
+        "<script>\nfunction sortTableByNum(n) {\nvar table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;\n"
+        "table = document.getElementsByTagName(\"table\")[0];\nswitching = true;\ndir = \"asc\";\n"
+        "while (switching) {\nswitching = false;\nrows = table.rows;\nfor (i = 1; i < (rows.length - 1); i++) {\n"
+        "shouldSwitch = false;\nx = rows[i].getElementsByTagName(\"td\")[n];\ny = rows[i + 1].getElementsByTagName(\"td\")[n];\n"
+        "var xValue = parseInt(x.innerHTML.split(" ")[0]);\nvar yValue = parseInt(y.innerHTML.split(" ")[0]);\n"
+        "if (dir == \"asc\") {\nif (xValue > yValue) {\nshouldSwitch = true;\nbreak;\n}\n"
+        "} else if (dir == \"desc\") {\nif (xValue < yValue) {\nshouldSwitch = true;\nbreak;\n}\n}\n}\n"
+        "if (shouldSwitch) {\nrows[i].parentNode.insertBefore(rows[i + 1], rows[i]);\nswitching = true;\n"
+        "switchcount++;\n} else {\nif (switchcount == 0 && dir == \"asc\") {\ndir = \"desc\";\n"
+        "switching = true;\n}\n}\n}\n}\n</script>\n");
+    snprintf(response + strlen(response), sizeof(response) - strlen(response),
         "</head>\n<body>\n<h1>\n<center>\nContenido de %s\n</center>\n</h1>\n<table>\n", root_dir);
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
         "<thead>\n<tr>\n<th id=\"nombre\" onclick=\"sortTable(0)\">Name</th>\n");
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
-        "<th id=\"peso\" onclick=\"sortTable(1)\">Size</th>\n");
+        "<th id=\"peso\" onclick=\"sortTableByNum(1)\">Size</th>\n");
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
         "<th id=\"fecha\" onclick=\"sortTable(2)\">Date</th>\n");
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
@@ -151,7 +162,7 @@ void html_builder(int client_socket, const char *root_dir) {
         if (stat(entry_path, &info) == 0) {
             if (is_dir)
                 snprintf(response + strlen(response), sizeof(response) - strlen(response),
-                    "<tr>\n<td><a href=\"%s/\" class=\"dir\">%s/</a></td>\n", entry->d_name, entry->d_name);
+                    "<tr>\n<td><a href=\"%s/\">%s/</a></td>\n", entry->d_name, entry->d_name);
             else
                 snprintf(response + strlen(response), sizeof(response) - strlen(response),
                     "<tr>\n<td><a href=\"%s\" class=\"file\">%s</a></td>\n", entry->d_name, entry->d_name);
@@ -168,8 +179,6 @@ void html_builder(int client_socket, const char *root_dir) {
     // escribir cierre HTML
     snprintf(response + strlen(response), sizeof(response) - strlen(response),
         "</tbody>\n</table>\n</body>\n</html>");
-
-    printf("Archivo HTML generado exitosamente.\n");
 
     send(client_socket, response, strlen(response), 0);
 }
