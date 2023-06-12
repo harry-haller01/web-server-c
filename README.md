@@ -65,3 +65,8 @@ Una vez que el servidor esté en ejecución, abra un navegador web y navegue a `
 ## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT. Consulte el archivo `LICENSE` para obtener más información.
+
+## Autores
+
+Dariel Martinez Perez - C311
+Brian Inclan Quesada - C311
